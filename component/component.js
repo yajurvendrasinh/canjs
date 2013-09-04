@@ -211,11 +211,14 @@ steal("can/util","can/control","can/observe","can/view/mustache","can/view/musta
 
 					if(frag){
 						can.insertBefore(el.parentNode, frag, el);
+					} else {
+						can.insertBefore(el.parentNode, document.createComment('select:' + select), el)
 					}
 					
 					can.remove( can.$(el) );
 				}
 				// render the component's template
+				// 
 				var frag = this.constructor.renderer( renderedScope, helpers);
 			} else {
 				// otherwise render the contents between the 

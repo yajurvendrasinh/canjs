@@ -5,7 +5,11 @@ module("can/component",{
 		can.remove( can.$("#qunit-test-area>*") );
 	}
 })
-	
+
+var stripComments = function(innerHTML){
+	var str = innerHTML + "";
+	return str.replace(/<!--[\s\S]*?-->/g, '');
+}
 	
 var Paginate = can.Map.extend({
   count: Infinity,
@@ -547,7 +551,7 @@ test('multiple insertion points without tag contents', function(){
 
 	can.append(can.$("#qunit-test-area"), template({}))
 
-	equal(can.$('#qunit-test-area foo-bar')[0].innerHTML, '<h1>Foo bar</h1><p>Baz Qux</p>')
+	equal(stripComments(can.$('#qunit-test-area foo-bar')[0].innerHTML), '<h1>Foo bar</h1><p>Baz Qux</p>')
 })
 
 test('multiple insertion points with some contents overriden', function(){
@@ -560,7 +564,7 @@ test('multiple insertion points with some contents overriden', function(){
 
 	can.append(can.$("#qunit-test-area"), template({}))
 
-	equal(can.$('#qunit-test-area foo-bar')[0].innerHTML, '<h1>BAR FOO</h1><p>Baz Qux</p>')
+	equal(stripComments(can.$('#qunit-test-area foo-bar')[0].innerHTML), '<h1>BAR FOO</h1><p>Baz Qux</p>')
 })
 
 test('multiple insertion points with all contents overriden', function(){
@@ -573,7 +577,7 @@ test('multiple insertion points with all contents overriden', function(){
 
 	can.append(can.$("#qunit-test-area"), template({}))
 
-	equal(can.$('#qunit-test-area foo-bar')[0].innerHTML, '<h1>BAR FOO</h1><hr><h2>Test</h2><hr><b>BOLD</b>')
+	equal(stripComments(can.$('#qunit-test-area foo-bar')[0].innerHTML), '<h1>BAR FOO</h1><hr><h2>Test</h2><hr><b>BOLD</b>')
 })
 
 test('multiple insertion points with some contents left empty', function(){
@@ -586,7 +590,7 @@ test('multiple insertion points with some contents left empty', function(){
 
 	can.append(can.$("#qunit-test-area"), template({}))
 
-	equal(can.$('#qunit-test-area foo-bar')[0].innerHTML, '<h2>BAR FOO</h2>')
+	equal(stripComments(can.$('#qunit-test-area foo-bar')[0].innerHTML), '<h2>BAR FOO</h2>')
 })
 
 test('multiple insertion points with dynamic behavior', function(){
@@ -610,18 +614,37 @@ test('multiple insertion points with dynamic behavior', function(){
 		dynamic : dynamic
 	}))
 
-	equal(can.$('#qunit-test-area foo-bar')[0].innerHTML, '');
+	equal(stripComments(can.$('#qunit-test-area foo-bar')[0].innerHTML), '');
 
 	can.trigger( can.$("#qunit-test-area foo-bar"), "click" );
 
-	equal(can.$('#qunit-test-area foo-bar')[0].innerHTML, '<h2>DYNAMIC</h2>');
+	equal(stripComments(can.$('#qunit-test-area foo-bar')[0].innerHTML), '<h2>DYNAMIC</h2>');
 
 	dynamic('static')
 
-	equal(can.$('#qunit-test-area foo-bar')[0].innerHTML, '<h2>static</h2>');
-
-
+	equal(stripComments(can.$('#qunit-test-area foo-bar')[0].innerHTML), '<h2>static</h2>');
 
 })
-	
+
+test('dynamic hell', function(){
+	can.Component.extend({
+		tag : 'foo-bar',
+		template : "<content select='button'></content><content select='p'></content><content></content>",
+	})
+
+	var template = can.view.mustache('<foo-bar>{{#if foo}}<b>Some other content</b><p>PARA</p><button>Button</button>{{/if}}</foo-bar>'),
+		foo = can.compute(false);
+
+	can.append(can.$("#qunit-test-area"), template({
+		foo : foo
+	}))
+
+	equal(stripComments(can.$('#qunit-test-area foo-bar')[0].innerHTML), '');
+
+	foo(true)
+
+	equal(stripComments(can.$('#qunit-test-area foo-bar')[0].innerHTML), '<button>Button</button><p>PARA</p><b>Some other content</b>');
+
+})
+
 })()

@@ -29,14 +29,36 @@ steal('can/util/can.js',function (can) {
 		}
 	}
 	
+
+	var nodeListToFragment = function(nodeList){
+		var frag = document.createDocumentFragment();
+		for(var i = 0; i < nodeList.length; i++){
+			frag.appendChild(nodeList[i]);
+		}
+		return frag;
+	}
 	
 	can.appendChild = function(el, child){
+
 		if(child.nodeType === 11){
 			var children = can.makeArray(child.childNodes);
 		} else {
 			var children = [child]
 		}
-		el.appendChild(child);
+
+		var innerHtml = el.innerHTML,
+			frag      = nodeListToFragment(children);
+
+		if(innerHtml && innerHtml.indexOf('<!--select:') !== -1){
+			var childNodes = el.childNodes;
+			for(var i = 0; i < childNodes.length; i++){
+				if(childNodes[i].nodeType === 8 && childNodes[i].nodeValue.substring(0,7) === 'select:'){
+					el.insertBefore(nodeListToFragment(frag.querySelectorAll(childNodes[i].nodeValue.substring(7))), childNodes[i])
+				}
+			}
+		}
+
+		el.appendChild(frag);
 		can.inserted(children)
 	}
 	can.insertBefore = function(el, child, ref){
@@ -45,7 +67,20 @@ steal('can/util/can.js',function (can) {
 		} else {
 			var children = [child];
 		}
-		el.insertBefore(child, ref);
+
+		var frag = nodeListToFragment(children),
+			innerHtml = el.innerHTML;
+
+		if(innerHtml && innerHtml.indexOf('<!--select:') !== -1){
+			var childNodes = el.childNodes;
+			for(var i = 0; i < childNodes.length; i++){
+				if(childNodes[i].nodeType === 8 && childNodes[i].nodeValue.substring(0,7) === 'select:'){
+					el.insertBefore(nodeListToFragment(frag.querySelectorAll(childNodes[i].nodeValue.substring(7))), childNodes[i])
+				}
+			}
+		}
+
+		el.insertBefore(frag, ref);
 		can.inserted(children)
 	}
 	
