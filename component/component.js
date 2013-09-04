@@ -12,6 +12,14 @@ steal("can/util","can/control","can/observe","can/view/mustache","can/view/musta
 		return true;
 	}
 
+	var nodeListToFragment = function(nodeList){
+		var frag = document.createDocumentFragment();
+		for(var i = 0; i < nodeList.length; i++){
+			frag.appendChild(nodeList[i]);
+		}
+		return frag;
+	}
+
 	var Component = can.Component = can.Construct.extend({
 		setup: function(){
 			can.Construct.setup.apply( this, arguments );
@@ -173,7 +181,7 @@ steal("can/util","can/control","can/observe","can/view/mustache","can/view/musta
 						selectors.push(select);
 						// if there selector returned any elements use it
 						if(children.length){
-							frag = can.view.frag(children);
+							frag = nodeListToFragment(children);
 						// if selector didn't return any elements, use original content contents
 						} else if(rendererOptions.subtemplate) {
 							frag = can.view.frag(
