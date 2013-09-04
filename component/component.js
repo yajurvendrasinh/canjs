@@ -1,5 +1,17 @@
 steal("can/util","can/control","can/observe","can/view/mustache","can/view/mustache/bindings",function(can){
 	
+
+	// check if frag contains only text nodes with whitespace
+	var emptyFrag = function(frag){
+		var children = frag.childNodes;
+		for(var i = 0; i < children.length; i++){
+			if(children[i].nodeType !== 3 || can.trim(children[i].nodeValue) !== ''){
+				return false;
+			}
+		}
+		return true;
+	}
+
 	var Component = can.Component = can.Construct.extend({
 		setup: function(){
 			can.Construct.setup.apply( this, arguments );
@@ -136,6 +148,7 @@ steal("can/util","can/control","can/observe","can/view/mustache","can/view/musta
 			
 			// if this component has a template (that we've already converted to a renderer)
 			if( this.constructor.renderer ) {
+				var selectors = [];
 				// add content to tags
 				if(!helpers._tags){
 					helpers._tags = {};
@@ -143,14 +156,75 @@ steal("can/util","can/control","can/observe","can/view/mustache","can/view/musta
 				
 				// we need be alerted to when a <content> element is rendered so we can put the original contents of the widget in its place
 				helpers._tags.content = function(el, rendererOptions){
+					var hookupSubtemplate, frag, $el, children, select;
+					// immediately render 
+					if(hookupOptions.subtemplate){
+						hookupSubtemplate = can.view.frag(
+							hookupOptions.subtemplate(renderedScope, rendererOptions.options.add(helpers)) 
+						);
+					}
+
+					
+					$el = can.$(el);
+					select = $el.attr('select');
+					if(select && hookupSubtemplate){
+						children = hookupSubtemplate.querySelectorAll(select);
+						selectors.push(select);
+						if(children.length){
+							frag = can.view.frag(children);
+						} else if(rendererOptions.subtemplate) {
+							frag = can.view.frag(
+								rendererOptions.subtemplate(renderedScope, rendererOptions.options.add(helpers))
+							);
+						}
+					} else {
+						children = hookupSubtemplate.querySelectorAll(selectors.join());
+						for(var i = 0; i < children.length; i++){
+							hookupSubtemplate.removeChild(children[i]);
+						}
+						if(!emptyFrag(hookupSubtemplate)){
+							frag = hookupSubtemplate;
+						} else {
+							frag = can.view.frag(
+								rendererOptions.subtemplate(renderedScope, rendererOptions.options.add(helpers))
+							);
+						}
+					}
+
+					if(frag){
+						can.insertBefore(el.parentNode, frag, el);
+					}
+					
+					can.remove( can.$(el) );
+					
+
+
+
 					// first check if there was content within the custom tag
 					// otherwise, render what was within <content>, the default code
-					var subtemplate = hookupOptions.subtemplate || rendererOptions.subtemplate
+					
+					/*var subtemplate = hookupOptions.subtemplate || rendererOptions.subtemplate;
 					if(subtemplate) {
+						var $el = can.$(el);
 						var frag = can.view.frag( subtemplate(renderedScope, rendererOptions.options.add(helpers) ) );
-						can.insertBefore(el.parentNode, frag, el);
-						can.remove( can.$(el) );
-					}
+
+						if($el.attr('select')){
+							var children = frag.querySelectorAll($el.attr('select'));
+							selectors.push($el.attr('select'))
+							frag = can.view.frag(children);
+						} else {
+							var children = frag.querySelectorAll(selectors.join());
+							for(var i = 0; i < children.length; i++){
+								frag.removeChild(children[i])
+							}
+							if(frag.childNodes.length === 0){
+								var view = rendererOptions.subtemplate(renderedScope, rendererOptions.options.add(helpers) )
+								frag = can.view.frag(view)
+							}
+						}
+
+						
+					}*/
 				}
 				// render the component's template
 				var frag = this.constructor.renderer( renderedScope, helpers);
