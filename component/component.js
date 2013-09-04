@@ -3,7 +3,7 @@ steal("can/util","can/control","can/observe","can/view/mustache","can/view/musta
 
 	// check if frag contains only text nodes with whitespace
 	var emptyFrag = function(frag){
-		var children = frag.childNodes;
+		var children = (frag && frag.childNodes) || [];
 		for(var i = 0; i < children.length; i++){
 			if(children[i].nodeType !== 3 || can.trim(children[i].nodeValue) !== ''){
 				return false;
@@ -157,7 +157,7 @@ steal("can/util","can/control","can/observe","can/view/mustache","can/view/musta
 				// we need be alerted to when a <content> element is rendered so we can put the original contents of the widget in its place
 				helpers._tags.content = function(el, rendererOptions){
 					var hookupSubtemplate, frag, $el, children, select;
-					// immediately render 
+					// render hookup template
 					if(hookupOptions.subtemplate){
 						hookupSubtemplate = can.view.frag(
 							hookupOptions.subtemplate(renderedScope, rendererOptions.options.add(helpers)) 
@@ -167,21 +167,27 @@ steal("can/util","can/control","can/observe","can/view/mustache","can/view/musta
 					
 					$el = can.$(el);
 					select = $el.attr('select');
+					// if there is a hookup template and a content tag has a select attribute
 					if(select && hookupSubtemplate){
 						children = hookupSubtemplate.querySelectorAll(select);
 						selectors.push(select);
+						// if there selector returned any elements use it
 						if(children.length){
 							frag = can.view.frag(children);
+						// if selector didn't return any elements, use original content contents
 						} else if(rendererOptions.subtemplate) {
 							frag = can.view.frag(
 								rendererOptions.subtemplate(renderedScope, rendererOptions.options.add(helpers))
 							);
 						}
 					} else {
-						children = hookupSubtemplate.querySelectorAll(selectors.join());
-						for(var i = 0; i < children.length; i++){
-							hookupSubtemplate.removeChild(children[i]);
+						if(hookupSubtemplate){
+							children = hookupSubtemplate.querySelectorAll(selectors.join());
+							for(var i = 0; i < children.length; i++){
+								hookupSubtemplate.removeChild(children[i]);
+							}
 						}
+						
 						if(!emptyFrag(hookupSubtemplate)){
 							frag = hookupSubtemplate;
 						} else {
