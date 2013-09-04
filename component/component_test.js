@@ -588,5 +588,40 @@ test('multiple insertion points with some contents left empty', function(){
 
 	equal(can.$('#qunit-test-area foo-bar')[0].innerHTML, '<h2>BAR FOO</h2>')
 })
+
+test('multiple insertion points with dynamic behavior', function(){
+	can.Component.extend({
+		tag : 'foo-bar',
+		template : '<content select="h1"></content>{{#if visible}}<content><p></p></content>{{/if}}',
+		scope : {
+			visible : false
+		},
+		events : {
+			click : function(){
+				this.scope.attr('visible', true);
+			}
+		}
+	})
+
+	var template = can.view.mustache("  <foo-bar><h2>{{ dynamic }}</h2></foo-bar>  "),
+		dynamic  = can.compute('DYNAMIC')
+
+	can.append(can.$("#qunit-test-area"), template({
+		dynamic : dynamic
+	}))
+
+	equal(can.$('#qunit-test-area foo-bar')[0].innerHTML, '');
+
+	can.trigger( can.$("#qunit-test-area foo-bar"), "click" );
+
+	equal(can.$('#qunit-test-area foo-bar')[0].innerHTML, '<h2>DYNAMIC</h2>');
+
+	dynamic('static')
+
+	equal(can.$('#qunit-test-area foo-bar')[0].innerHTML, '<h2>static</h2>');
+
+
+
+})
 	
 })()
