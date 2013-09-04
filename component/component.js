@@ -182,18 +182,22 @@ steal("can/util","can/control","can/observe","can/view/mustache","can/view/musta
 						}
 					} else {
 						if(hookupSubtemplate){
-							children = hookupSubtemplate.querySelectorAll(selectors.join());
-							for(var i = 0; i < children.length; i++){
-								hookupSubtemplate.removeChild(children[i]);
+							if(selectors.length){
+								children = hookupSubtemplate.querySelectorAll(selectors.join());
+								for(var i = 0; i < children.length; i++){
+									hookupSubtemplate.removeChild(children[i]);
+								}
 							}
 						}
 						
 						if(!emptyFrag(hookupSubtemplate)){
 							frag = hookupSubtemplate;
-						} else {
+						} else if(rendererOptions.subtemplate){
 							frag = can.view.frag(
 								rendererOptions.subtemplate(renderedScope, rendererOptions.options.add(helpers))
 							);
+						} else {
+							frag = hookupSubtemplate;
 						}
 					}
 
