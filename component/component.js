@@ -166,7 +166,7 @@ steal("can/util","can/control","can/observe","can/view/mustache","can/view/musta
 
 					
 					$el = can.$(el);
-					select = $el.attr('select');
+					select = el.getAttribute('select');
 					// if there is a hookup template and a content tag has a select attribute
 					if(select && hookupSubtemplate){
 						children = hookupSubtemplate.querySelectorAll(select);
@@ -206,35 +206,6 @@ steal("can/util","can/control","can/observe","can/view/mustache","can/view/musta
 					}
 					
 					can.remove( can.$(el) );
-					
-
-
-
-					// first check if there was content within the custom tag
-					// otherwise, render what was within <content>, the default code
-					
-					/*var subtemplate = hookupOptions.subtemplate || rendererOptions.subtemplate;
-					if(subtemplate) {
-						var $el = can.$(el);
-						var frag = can.view.frag( subtemplate(renderedScope, rendererOptions.options.add(helpers) ) );
-
-						if($el.attr('select')){
-							var children = frag.querySelectorAll($el.attr('select'));
-							selectors.push($el.attr('select'))
-							frag = can.view.frag(children);
-						} else {
-							var children = frag.querySelectorAll(selectors.join());
-							for(var i = 0; i < children.length; i++){
-								frag.removeChild(children[i])
-							}
-							if(frag.childNodes.length === 0){
-								var view = rendererOptions.subtemplate(renderedScope, rendererOptions.options.add(helpers) )
-								frag = can.view.frag(view)
-							}
-						}
-
-						
-					}*/
 				}
 				// render the component's template
 				var frag = this.constructor.renderer( renderedScope, helpers);
