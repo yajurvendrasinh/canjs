@@ -535,5 +535,58 @@ can.trigger( can.$("#qunit-test-area hello-world"), "click" );
 equal(can.$("#qunit-test-area hello-world")[0].innerHTML, "Hello There!")
 
 })
+
+
+test('multiple insertion points without tag contents', function(){
+	can.Component.extend({
+		tag : 'foo-bar',
+		template : '<content select="h1"><h1>Foo bar</h1></content><content><p>Baz Qux</p></content>'
+	})
+
+	var template = can.view.mustache("  <foo-bar></foo-bar>  ");
+
+	can.append(can.$("#qunit-test-area"), template({}))
+
+	equal(can.$('#qunit-test-area foo-bar')[0].innerHTML, '<h1>Foo bar</h1><p>Baz Qux</p>')
+})
+
+test('multiple insertion points with some contents overriden', function(){
+	can.Component.extend({
+		tag : 'foo-bar',
+		template : '<content select="h1"><h1>Foo bar</h1></content><content><p>Baz Qux</p></content>'
+	})
+
+	var template = can.view.mustache("  <foo-bar><h1>BAR FOO</h1></foo-bar>  ");
+
+	can.append(can.$("#qunit-test-area"), template({}))
+
+	equal(can.$('#qunit-test-area foo-bar')[0].innerHTML, '<h1>BAR FOO</h1><p>Baz Qux</p>')
+})
+
+test('multiple insertion points with all contents overriden', function(){
+	can.Component.extend({
+		tag : 'foo-bar',
+		template : '<content select="h1"><h1>Foo bar</h1></content><hr><content select="h2"></content><hr><content><p>Baz Qux</p></content>'
+	})
+
+	var template = can.view.mustache("  <foo-bar><h1>BAR FOO</h1><b>BOLD</b><h2>Test</h2></foo-bar>  ");
+
+	can.append(can.$("#qunit-test-area"), template({}))
+
+	equal(can.$('#qunit-test-area foo-bar')[0].innerHTML, '<h1>BAR FOO</h1><hr><h2>Test</h2><hr><b>BOLD</b>')
+})
+
+test('multiple insertion points with some contents left empty', function(){
+	can.Component.extend({
+		tag : 'foo-bar',
+		template : '<content select="h1"></content><content><p>Baz Qux</p></content>'
+	})
+
+	var template = can.view.mustache("  <foo-bar><h2>BAR FOO</h2></foo-bar>  ");
+
+	can.append(can.$("#qunit-test-area"), template({}))
+
+	equal(can.$('#qunit-test-area foo-bar')[0].innerHTML, '<h2>BAR FOO</h2>')
+})
 	
 })()
