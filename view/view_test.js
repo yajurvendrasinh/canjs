@@ -710,10 +710,10 @@
 		var withId = can.view.mustache('test-485', template);
 		var withoutId = can.view.mustache(template);
 
-		ok(withoutId({ message: 'Without id'}) instanceof DocumentFragment,
+		ok(withoutId({ message: 'Without id'}).nodeType == 11,
 			'View without id returned document fragment');
 
-		ok(withId({ message: 'With id'}) instanceof DocumentFragment,
+		ok(withId({ message: 'With id'}).nodeType == 11,
 			'View with id returned document fragment');
 	});
 	
@@ -743,6 +743,19 @@
 		t();
 		ok(true)
 	})
+
+	test("Template in template tag (yo dawg)", function() {
+		var template = document.createElement('template');
+		template.setAttribute('type', 'test/mustache')
+		template.setAttribute('id', 'test_mustache')
+		template.innerHTML = '<span id="new_name">{{name}}</span>';
+		document.getElementById("qunit-test-area").appendChild(template);
+
+		var div = document.createElement('div');
+		div.appendChild(can.view('test_mustache', {name: 'Henry'}))
+
+		equal( div.getElementsByTagName("span")[0].firstChild.nodeValue , 'Henry');
+	});
 	
 	
 })();

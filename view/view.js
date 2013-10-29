@@ -542,9 +542,11 @@ steal("can/util", function( can ) {
 				url = url.substr(1);
 			}
 			// If we have an inline template, derive the suffix from the `text/???` part.
-			// This only supports `<script>` tags.
+			// This used to only support <script> tags by using `el.type` but now supports
+			// other tags, such as templates by using `el.getAttribute('type') instead, though
+			// by nature of <template> tags, this means it's only supported for Mustache.
 			if ( el = document.getElementById(url) ) {
-				suffix = "."+el.type.match(/\/(x\-)?(.+)/)[2];
+				suffix = "." + el.getAttribute('type').match(/\/(x\-)?(.+)/)[2];
 			}
 	
 			// If there is no suffix, add one.
