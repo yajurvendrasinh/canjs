@@ -647,4 +647,27 @@ test('dynamic hell', function(){
 
 })
 
+test('Ambigous selects with the dynamic behaviour', function(){
+	can.Component.extend({
+		tag : 'foo-bar',
+		template : "{{#if foo}}<div><content select='h2.title'></content></div>{{/if}}<content select='.title'></content><content></content>",
+	});
+
+
+	var template = can.view.mustache('<foo-bar><h1 class="title">H1</h1><h2 class="title">H2</h2><b class="title">B</b><span>Normal content</span></foo-bar>'),
+
+	foo = can.compute(false);
+
+	can.append(can.$("#qunit-test-area"), template({
+		foo : foo
+	}))
+
+	equal(stripComments(can.$('#qunit-test-area foo-bar')[0].innerHTML), '<h1 class="title">H1</h1><h2 class="title">H2</h2><b class="title">B</b><span>Normal content</span>');
+
+	foo(true)
+
+	equal(stripComments(can.$('#qunit-test-area foo-bar')[0].innerHTML), '<div><h2 class="title">H2</h2></div><h1 class="title">H1</h1><b class="title">B</b><span>Normal content</span>');
+
+})
+
 })()
