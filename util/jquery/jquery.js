@@ -1,4 +1,4 @@
-steal('jquery', 'can/util/can.js', 'can/util/attr', "can/event", 'can/util/array/each.js', "can/util/inserted", function ($, can, attr, event) {
+steal('jquery', 'can/util/can.js', 'can/util/attr', "can/event", "can/util/mutationobserver", "can/util/array/each.js", "can/util/inserted", function ($, can, attr, event, MutationObserver) {
 	var isBindableElement = function (node) {
 		// In IE8 window.window !== window.window, so we allow == here.
 		/*jshint eqeqeq:false*/
