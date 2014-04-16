@@ -4,31 +4,9 @@
  * license that can be found in the LICENSE file.
  */
 
-steal('can/util/weakmap', function(WeakMap){
+steal("can/util/weakmap", "can/util/setimmediate", function(WeakMap, setImmediate){
 
   var registrationsTable = new WeakMap();
-
-  // We use setImmediate or postMessage for our future callback.
-  var setImmediate = window.msSetImmediate;
-
-  // Use post message to emulate setImmediate.
-  if (!setImmediate) {
-    var setImmediateQueue = [];
-    var sentinel = String(Math.random());
-    window.addEventListener('message', function(e) {
-      if (e.data === sentinel) {
-        var queue = setImmediateQueue;
-        setImmediateQueue = [];
-        queue.forEach(function(func) {
-          func();
-        });
-      }
-    });
-    setImmediate = function(func) {
-      setImmediateQueue.push(func);
-      window.postMessage(sentinel, '*');
-    };
-  }
 
   // This is used to ensure that we never schedule 2 callas to setImmediate
   var isScheduled = false;
@@ -46,12 +24,6 @@ steal('can/util/weakmap', function(WeakMap){
       isScheduled = true;
       setImmediate(dispatchCallbacks);
     }
-  }
-
-  function wrapIfNeeded(node) {
-    return window.ShadowDOMPolyfill &&
-        window.ShadowDOMPolyfill.wrapIfNeeded(node) ||
-        node;
   }
 
   function dispatchCallbacks() {
@@ -147,8 +119,6 @@ steal('can/util/weakmap', function(WeakMap){
 
   JsMutationObserver.prototype = {
     observe: function(target, options) {
-      target = wrapIfNeeded(target);
-
       // 1.1
       if (!options.childList && !options.attributes && !options.characterData ||
 

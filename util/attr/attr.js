@@ -3,7 +3,7 @@
 // `attributes` event on elements. This enables the user to do (jQuery example): `$(el).bind("attributes", function(ev) { ... })` where `ev` contains `attributeName` and `oldValue`.
 
 
-steal("can/util/can.js", function (can) {
+steal("can/util/can.js", "can/util/mutationobserver", function (can, MutationObserver) {
 
 	// Acts as a polyfill for setImmediate which only works in IE 10+. Needed to make
 	// the triggering of `attributes` event async.
@@ -11,10 +11,7 @@ steal("can/util/can.js", function (can) {
 			return setTimeout(cb, 0);
 		},
 		attr = {
-			// This property lets us know if the browser supports mutation observers.
-			// If they are supported then that will be setup in can/util/jquery and those native events will be used to inform observers of attribute changes.
-			// Otherwise this module handles triggering an `attributes` event on the element.
-			MutationObserver: window.MutationObserver || window.WebKitMutationObserver || window.MozMutationObserver,
+			MutationObserver: MutationObserver,
 
 			/**
 			 * @property {Object.<String,(String|Boolean|function)>} can.view.attr.map
