@@ -19,6 +19,8 @@ steal("can/util/mutationobserver/jquery_mutationobserver.js", function(Observer)
 		};
 	}
 
+	//Observer = window.MutationObserver;
+
 	test("It observes attributes being added", function() {
 		var element = document.createElement("div");
 
@@ -234,6 +236,165 @@ steal("can/util/mutationobserver/jquery_mutationobserver.js", function(Observer)
 		can.remove(can.$(child));
 
 		stop();
+	});
+
+	test("It observes nested children being removed using subtree", function() {
+		var element = document.createElement("ul");
+		var second = document.createElement("li");
+		var third = document.createElement("div");
+
+		can.append(can.$(second), third);
+		can.append(can.$(element), second);
+		can.append(can.$("#qunit-test-area"), element);
+
+		var observer = new Observer(function(mutations) {
+			var mutation = mutations[0];
+
+			equal(mutations.length, 1);
+			equal(mutation.type, "childList");
+			equal(mutation.removedNodes[0], third);
+
+			start();
+		});
+
+		observer.observe(element, {
+			childList: true,
+			subtree: true
+		});
+
+		can.remove(can.$(third));
+
+		stop();
+	});
+
+	test("It doesn't observes nested children being removed without subtree option", function() {
+		var element = document.createElement("ul");
+		var second = document.createElement("li");
+		var third = document.createElement("div");
+		var timeout;
+
+		can.append(can.$(second), third);
+		can.append(can.$(element), second);
+
+		var observer = new Observer(function(mutations) {
+			clearTimeout(timeout);
+
+			// We shouldn't get here
+			ok(false, "Shouldn't call childList on a nested element without subtree option");
+
+			start();
+		});
+
+		observer.observe(element, {
+			childList: true
+		});
+
+		can.append(can.$("#qunit-test-area"), element);
+		can.remove(can.$(third));
+
+		// Wait 5ms, observation would have been called by then.
+		timeout = setTimeout(function() {
+			clearTimeout(timeout);
+			ok(true);
+			start();
+		}, 5);
+
+		stop();
+	});
+
+	test("Disconnecting will prevent further mutations from being observed", function() {
+		var element = document.createElement("div");
+		var child = document.createElement("span");
+		var timeout;
+
+		var observer = new Observer(function() {
+			clearTimeout(timeout);
+
+			// We shouldn't get this callback because we disconnected before the mutation
+			ok(false, "Received an observation after disconnecting had occurred");
+			start();
+		});
+
+		observer.observe(element, {
+			childList: true
+		});
+
+		can.append(can.$("#qunit-test-area"), element);
+
+		// Disconnect
+		observer.disconnect();
+
+		// Insert the child
+		can.append(can.$(element), child);
+
+		timeout = setTimeout(function() {
+			clearTimeout(timeout);
+			ok(true);
+			start();
+		}, 5);
+
+		stop();
+	});
+
+	test("Observing multiple elements should work", function() {
+		var element1 = document.createElement("div");
+		var element2 = document.createElement("div");
+
+		var observer = new Observer(function(mutations) {
+
+			// There should be 2 mutations
+			equal(mutations.length, 2);
+
+			equal(mutations[0].target, element1);
+			equal(mutations[1].target, element2);
+			
+			start();
+		});
+
+		observer.observe(element1, {
+			attributes: true
+		});
+
+		observer.observe(element2, {
+			attributes: true
+		});
+
+		can.append(can.$("#qunit-test-area"), element1);
+		can.append(can.$("#qunit-test-area"), element2);
+
+		setAttr(element1, "foo", "bar");
+		setAttr(element2, "baz", "qux");
+
+		stop();
+	});
+
+	test("Calling observe on the same element should only result in 1 event", function() {
+		var element = document.createElement("div");
+
+		var observer = new Observer(function(mutations) {
+
+			// There should only be 1 mutations
+			equal(mutations.length, 1);
+
+			start();
+		});
+
+		observer.observe(element, {
+			attributes: true
+		});
+
+		// Do the same observation again
+		observer.observe(element, {
+			attributes: true
+		});
+
+		can.append(can.$("#qunit-test-area"), element);
+
+		setAttr(element, "foo", "bar");
+
+		stop();
+
+
 	});
 
 });

@@ -1,13 +1,15 @@
-steal("jquery", "can/util/setimmediate", function($, setImmediate) {
+// # can/util/mutationobserver/jquery_mutationobserver.js
+//
+// This implements `can.MutationObserver` for older browers that do not support
+// native MutationObservers or Mutation Events.
 
-	var bind = function(element, name, fn) {
-		var $el = $(element);
+steal("jquery", "can/util/setimmediate", "can/control", function($, setImmediate) {
 
-		$el.bind(name, fn);
-		$el.bind("remove", function() {
-			$el.unbind(name, fn);
-		});
-	};
+	// We only want to run this code if the browser supports neither MutationObserver
+	// or Mutation Event.
+	/*if(window.MutationObserver || window.MutationEvent) {
+		return;
+	}*/
 
 	// handle via calls to attr
 	var oldAttr = $.attr;
@@ -65,17 +67,20 @@ steal("jquery", "can/util/setimmediate", function($, setImmediate) {
 			this.children().each(function(i, element) {
 				removedNodes.push(element);
 			});
-				
-			if(name === "remove") {
-				removedNodes.push(this[0]);
-			}
 
-			this.each(function(i, element) {
+			var trigger = function(i, element) {
 				$(element).trigger("canChildList", {
 					type: "childList",
 					removedNodes: removedNodes
 				});
-			});
+			};
+				
+			if(name === "remove") {
+				removedNodes.push(this[0]);
+				this.each(trigger);
+			} else {
+				removedNodes.each(trigger);
+			}
 
 			return oldFn.apply(this, arguments);
 		};
@@ -83,16 +88,12 @@ steal("jquery", "can/util/setimmediate", function($, setImmediate) {
 
 	can.each(addedEvents, function(name) {
 		var oldFn = $.fn[name];
-		$.fn[name] = function() {
-			var addedNodes = [];
+		$.fn[name] = function(/* content */) {
+			var addedNodes = can.makeArray(arguments);
 			
 			var result = oldFn.apply(this, arguments);
 
-			this.children().each(function(i, element) {
-				addedNodes.push(element);
-			});
-
-			this.each(function(i, element) {
+			can.each(addedNodes, function(element) {
 				$(element).trigger("canChildList", {
 					type: "childList",
 					addedNodes: addedNodes
@@ -103,9 +104,57 @@ steal("jquery", "can/util/setimmediate", function($, setImmediate) {
 		};
 	});
 
+	var EventListener = can.Control.extend({
+
+		handleAttributes: function(el, jEv, event) {
+			var element = this.element[0];
+			var options = this.options.observerOptions;
+			var observer = this.options.observer;
+
+			// If we're not observing subtrees, then make sure that the target
+			// element is the element of this observation.
+			if(!options.subtree && element !== event.target) {
+				return;
+			}
+
+			// If using attribute filters, make sure this is an attribute
+			// that we care about.
+			if(options.attributeFilter &&
+				 can.inArray(event.attributeName, options.attributeFilter) === -1) {
+				return;
+			}
+
+			event.type = "attributes";
+
+			// If this observation doesn't care about oldValue, don't send that
+			// as part of the event.
+			if(!options.attributeOldValue) {
+				delete event.oldValue;
+			}
+			observer._queue(event);
+		},
+
+		handleChildList: function(el, jEv, event) {
+			var element = this.element[0];
+			var observer = this.options.observer;
+			var options = this.options.observerOptions;
+
+			// If we are not observing `subtree` then the `event.target` must be
+			// a direct child of `element`.
+			if(!options.subtree && jEv.target.parentNode !== element) {
+				return;
+			}
+
+			event.target = element;
+			observer._queue(event);
+		}
+		
+	});
+
 	function jMutationObserver(callback) {
 		this._callback = callback;
 		this._mutations = [];
+		this._bound = [];
 	}
 
 	can.extend(jMutationObserver.prototype, {
@@ -117,44 +166,49 @@ steal("jquery", "can/util/setimmediate", function($, setImmediate) {
 		 * @param {Object} options Init options for this observation
 		 */
 		observe: function(element, options) {
-			var $element = $(element);
-			var observer = this;
+			// Make sure we are not already observing this element. If so, then ignore
+			// this function call so that we don't callback multiple times for the same element.
+			if(this._observing(element)) {
+				return;
+			}
 
-			// For the `attributes` type of observation
+			var control = new EventListener(element, {
+				observer: this,
+				observerOptions: options
+			});
+
+			// For the `attributes` type of observation.
 			if(options.attributes) {
-				// Bind to the special canAttribute event so that any descendant nodes
-				// also trigger up
-				bind(element, "canAttribute", function(jEv, event) {
-					// If we're not observing subtrees, then make sure that the target element
-					// is the element of this observation.
-					if(!options.subtree && element !== event.target) {
-						return;
-					}
-
-					// If using attribute filters, make sure this is an attribute
-					// that we care about.
-					if(options.attributeFilter &&
-						 can.inArray(event.attributeName, options.attributeFilter) === -1) {
-						return;
-					}
-
-					event.type = "attributes";
-
-					// If this observation doesn't care about oldValue, don't send that
-					// as part of the event.
-					if(!options.attributeOldValue) {
-						delete event.oldValue;
-					}
-					observer._queue(event);
-				});
+				control.on("canAttribute", "handleAttributes");
 			}
 
+			// For the `childList` type of observation.
 			if(options.childList) {
-				bind(element, "canChildList", function(jEv, event) {
-					event.target = element;
-					observer._queue(event);
-				});
+				control.on("canChildList", "handleChildList");
 			}
+
+			this._bound.push(control);
+		},
+
+		disconnect: function() {
+			var bound = this._bound;
+			this._bound = [];
+
+			can.each(bound, function(control) {
+				control.destroy();
+			});
+		},
+
+		_observing: function(element) {
+			var bound = this._bound;
+
+			for(var i = 0, len = bound.length; i < len; i++) {
+				if(bound[i].element[0] === element) {
+					return true;
+				}
+			}
+
+			return false;
 		},
 
 		_queue: function(event) {
