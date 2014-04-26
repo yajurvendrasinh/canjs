@@ -30,15 +30,13 @@ steal("jquery", "can/util/setimmediate", "can/control", function($, setImmediate
 		function (args, table, callback) {
 			var addedNodes = [];
 
-			var ret = oldDomManip.call(this, args, table, function(elem) {
+			var ret = oldDomManip.call(this, args, function(elem) {
 				addedNodes.push(elem);
-
 				return callback.apply(this, arguments);
 			});
 
 			$.each(addedNodes, function(i, element) {
-				$(element).trigger("canChildList", {
-					type: "childList",
+				traverse($(element), "canChildList", handleChildList, {
 					addedNodes: addedNodes
 				});
 			});
@@ -50,13 +48,11 @@ steal("jquery", "can/util/setimmediate", "can/control", function($, setImmediate
 
 			var ret = oldDomManip.call(this, args, function(elem) {
 				addedNodes.push(elem);
-
 				return callback.apply(this, arguments);
 			});
 
 			$.each(addedNodes, function(i, element) {
-				$(element).trigger("canChildList", {
-					type: "childList",
+				traverse($(element), "canChildList", handleChildList, {
 					addedNodes: addedNodes
 				});
 			});
@@ -68,8 +64,7 @@ steal("jquery", "can/util/setimmediate", "can/control", function($, setImmediate
 	var oldClean = $.cleanData;
 	$.cleanData = function (elems) {
 		$.each(elems, function(i, element) {
-			$(element).trigger("canChildList", {
-				type: "childList",
+			traverse($(element), "canChildList", handleChildList, {
 				removedNodes: elems
 			});
 		});
@@ -77,7 +72,26 @@ steal("jquery", "can/util/setimmediate", "can/control", function($, setImmediate
 		oldClean(elems);
 	};
 
-	// handle via calls to attr
+	// Helper for the 2 different `attr` methods, just checks to see if the element
+	// has a mutationobservation, and if so calls the appropriate handler.
+	var triggerAttributes = function(el, attrName, oldValue) {
+		var $el = $(el);
+		var data = $el.data("canAttribute");
+		var event = {
+			target: el,
+			attributeName: attrName,
+			oldValue: oldValue
+		};
+		
+		if(data) {
+			handleAttributes(el, el, data, event);
+		}
+
+		traverse($el, "canAttribute", handleAttributes, event);
+	};
+
+	// Wrapper for jQuery's `attr` method, determines whether the value has changed
+	// and if so triggers the attributes mutation event.
 	var oldAttr = $.attr;
 	$.attr = function (el, attrName) {
 		var oldValue, newValue;
@@ -89,11 +103,7 @@ steal("jquery", "can/util/setimmediate", "can/control", function($, setImmediate
 			newValue = oldAttr.call(this, el, attrName);
 		}
 		if (newValue !== oldValue) {
-			$(el).trigger("canAttribute", {
-				target: el,
-				attributeName: attrName,
-				oldValue: oldValue
-			});
+			triggerAttributes(el, attrName, oldValue);
 		}
 		return res;
 	};
@@ -103,69 +113,93 @@ steal("jquery", "can/util/setimmediate", "can/control", function($, setImmediate
 			res = oldRemove.apply(this, arguments);
 
 		if (oldValue != null) {
-			$(el).trigger("canAttribute", {
-				target: el,
-				attributeName: attrName,
-				oldValue: oldValue
-			});
+			triggerAttributes(el, attrName, oldValue);
 		}
 		return res;
 	};
 
-	var EventListener = can.Control.extend({
+	// Traverse a node looking for `name` data to which we'll call `fn`. This is
+	// how we know if an element's parents are interested in its mutations and if
+	// a mutation event will be queued on the observer.
+	var traverse = function(element, name, fn, event) {
+		var parent = element.parent();
 
-		handleAttributes: function(el, jEv, event) {
-			var element = this.element[0];
-			var options = this.options.observerOptions;
-			var observer = this.options.observer;
+		while(parent && parent.length) {
+			var data = parent.data(name);
 
-			// If we're not observing subtrees, then make sure that the target
-			// element is the element of this observation.
-			if(!options.subtree && element !== event.target) {
-				return;
+			if(data) {
+				fn(parent[0], element[0], data, event);
 			}
 
-			// If using attribute filters, make sure this is an attribute
-			// that we care about.
-			if(options.attributeFilter &&
-				 can.inArray(event.attributeName, options.attributeFilter) === -1) {
-				return;
-			}
-
-			event.type = "attributes";
-
-			// If this observation doesn't care about oldValue, don't send that
-			// as part of the event.
-			if(!options.attributeOldValue) {
-				delete event.oldValue;
-			}
-			observer._queue(event);
-		},
-
-		handleChildList: function(el, jEv, event) {
-			var element = this.element[0];
-			var observer = this.options.observer;
-			var options = this.options.observerOptions;
-
-			// If we are not observing `subtree` then the `event.target` must be
-			// a direct child of `element`.
-			if(!options.subtree && jEv.target.parentNode !== element) {
-				return;
-			}
-
-			event.target = element;
-			observer._queue(event);
+			parent = parent.parent();
 		}
-		
-	});
+	};
 
+	// Handles queueing of "attributes" mutation event for a given element
+	var handleAttributes = function(element, target, data, event) {
+		var observer = data.observer;
+		var options = data.options;
+
+		// If we're not observing subtrees, then make sure that the target
+		// element is the element of this observation.
+		if(!options.subtree && element !== target) {
+			return;
+		}
+
+		// If using attribute filters, make sure this is an attribute
+		// that we care about.
+		if(options.attributeFilter &&
+			 can.inArray(event.attributeName, options.attributeFilter) === -1) {
+			return;
+		}
+
+		event.type = "attributes";
+
+		// If this observation doesn't care about oldValue, don't send that
+		// as part of the event.
+		if(!options.attributeOldValue) {
+			delete event.oldValue;
+		}
+		observer._queue(event);
+	};
+
+	// Handles queuing up the mutation event for a given element that is interested
+	// in "childList" type of mutations, obeying what options are applicable for
+	// this given observation.
+	var handleChildList = function(element, target, data, event) {
+		var observer = data.observer;
+		var options = data.options;
+
+		// If we are not observing `subtree` then the `child` must be
+		// a direct child of `element`.
+		if(!options.subtree && target.parentNode !== element) {
+			return;
+		}
+
+		// Set event properties
+		event.type = "childList";
+		event.target = element;
+
+		observer._queue(event);
+	};
+
+	/**
+	 * @constructor jMutationObserver
+	 * @hide
+	 *
+	 * @description `jMutationObserver` is an object that allows users to observe
+	 * elements for mutations such as attributes changing, or child elements being
+	 * added/removed.
+	 *
+	 * @return {MutationObserver} A MutationObserver-like object
+	 */
 	function jMutationObserver(callback) {
 		this._callback = callback;
 		this._mutations = [];
 		this._bound = [];
 	}
 
-	can.extend(jMutationObserver.prototype, {
+	$.extend(jMutationObserver.prototype, {
 
 		/**
 		 * @method observe
@@ -174,44 +208,64 @@ steal("jquery", "can/util/setimmediate", "can/control", function($, setImmediate
 		 * @param {Object} options Init options for this observation
 		 */
 		observe: function(element, options) {
+			var $element = $(element);
+
 			// Make sure we are not already observing this element. If so, then ignore
 			// this function call so that we don't callback multiple times for the same element.
 			if(this._observing(element)) {
 				return;
 			}
 
-			var control = new EventListener(element, {
+			// This is the jQuery data we will be attaching to the element
+			var data = {
 				observer: this,
-				observerOptions: options
-			});
+				options: options
+			};
 
 			// For the `attributes` type of observation.
 			if(options.attributes) {
-				control.on("canAttribute", "handleAttributes");
+				$element.data("canAttribute", data);
 			}
 
 			// For the `childList` type of observation.
 			if(options.childList) {
-				control.on("canChildList", "handleChildList");
+				$element.data("canChildList", data);
 			}
 
-			this._bound.push(control);
+			this._bound.push($element);
 		},
 
+		/**
+		 * @method disconnect
+		 * @hide
+		 *
+		 * Disconnect all observations from this MutationObserver
+		 */
 		disconnect: function() {
 			var bound = this._bound;
 			this._bound = [];
 
-			can.each(bound, function(control) {
-				control.destroy();
+			$.each(bound, function(i, element) {
+				element.removeData("canAttribute");
+				element.removeData("canChildList");
 			});
 		},
 
+		/**
+		 * @method _observing
+		 * @hide
+		 *
+		 * Determines if an element is already being observed. Per the spec, the element
+		 * can only be observed once per MutationObserver.
+		 *
+		 * @param {HTMLElement} element
+		 * @return {Boolean} True if the element is already being observed
+		 */
 		_observing: function(element) {
 			var bound = this._bound;
 
 			for(var i = 0, len = bound.length; i < len; i++) {
-				if(bound[i].element[0] === element) {
+				if(bound[i][0] === element) {
 					return true;
 				}
 			}
@@ -219,6 +273,17 @@ steal("jquery", "can/util/setimmediate", "can/control", function($, setImmediate
 			return false;
 		},
 
+		/**
+		 * @method _queue
+		 * @hide
+		 *
+		 * Queue a mutation to be called again the Observer's callback.
+		 * Pushes the mutation into an array so that if there are multiple mutations
+		 * that occur before the end of the event loop, all of those mutations will
+		 * be called into the callback.
+		 *
+		 * @param {Object} event The mutation that will be called
+		 */
 		_queue: function(event) {
 			this._mutations.push(event);
 
