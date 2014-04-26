@@ -11,6 +11,40 @@ steal("jquery", "can/util/setimmediate", "can/control", function($, setImmediate
 		return;
 	}*/
 
+	// Handles insertions, like `append`, `insertBefore`, etc.
+	var oldDomManip = $.fn.domManip;
+	$.fn.domManip = function(args, callback) {
+		var addedNodes = [];
+
+		var ret = oldDomManip.call(this, args, function(elem) {
+			addedNodes.push(elem);
+
+			return callback.apply(this, arguments);
+		});
+
+		$.each(addedNodes, function(i, element) {
+			$(element).trigger("canChildList", {
+				type: "childList",
+				addedNodes: addedNodes
+			});
+		});
+
+		return ret;
+	};
+
+	// Handles removes like `remove` and `empty`
+	var oldClean = $.cleanData;
+	$.cleanData = function (elems) {
+		$.each(elems, function(i, element) {
+			$(element).trigger("canChildList", {
+				type: "childList",
+				removedNodes: elems
+			});
+		});
+
+		oldClean(elems);
+	};
+
 	// handle via calls to attr
 	var oldAttr = $.attr;
 	$.attr = function (el, attrName) {
@@ -45,64 +79,6 @@ steal("jquery", "can/util/setimmediate", "can/control", function($, setImmediate
 		}
 		return res;
 	};
-
-	var addedEvents = [
-		"after",
-		"append", 
-		"before",
-		"html",
-		"prepend"
-	];
-
-	var removalEvents = [
-		"remove",
-		"empty"
-	];
-
-	can.each(removalEvents, function(name) {
-		var oldFn = $.fn[name];
-		$.fn[name] = function() {
-			var removedNodes = [];
-			
-			this.children().each(function(i, element) {
-				removedNodes.push(element);
-			});
-
-			var trigger = function(i, element) {
-				$(element).trigger("canChildList", {
-					type: "childList",
-					removedNodes: removedNodes
-				});
-			};
-				
-			if(name === "remove") {
-				removedNodes.push(this[0]);
-				this.each(trigger);
-			} else {
-				removedNodes.each(trigger);
-			}
-
-			return oldFn.apply(this, arguments);
-		};
-	});
-
-	can.each(addedEvents, function(name) {
-		var oldFn = $.fn[name];
-		$.fn[name] = function(/* content */) {
-			var addedNodes = can.makeArray(arguments);
-			
-			var result = oldFn.apply(this, arguments);
-
-			can.each(addedNodes, function(element) {
-				$(element).trigger("canChildList", {
-					type: "childList",
-					addedNodes: addedNodes
-				});
-			});
-
-			return result;
-		};
-	});
 
 	var EventListener = can.Control.extend({
 
