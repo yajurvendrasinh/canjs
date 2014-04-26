@@ -11,26 +11,58 @@ steal("jquery", "can/util/setimmediate", "can/control", function($, setImmediate
 		return;
 	}*/
 
+	// Feature detect which domManip we are using.
 	// Handles insertions, like `append`, `insertBefore`, etc.
 	var oldDomManip = $.fn.domManip;
-	$.fn.domManip = function(args, callback) {
-		var addedNodes = [];
-
-		var ret = oldDomManip.call(this, args, function(elem) {
-			addedNodes.push(elem);
-
-			return callback.apply(this, arguments);
-		});
-
-		$.each(addedNodes, function(i, element) {
-			$(element).trigger("canChildList", {
-				type: "childList",
-				addedNodes: addedNodes
-			});
-		});
-
-		return ret;
+	$.fn.domManip = function (args, cb1, cb2) {
+		for (var i = 1; i < arguments.length; i++) {
+			if (typeof arguments[i] === 'function') {
+				cbIndex = i;
+				break;
+			}
+		}
+		return oldDomManip.apply(this, arguments);
 	};
+	$(document.createElement("div"))
+		.append(document.createElement("div"));
+
+	$.fn.domManip = (cbIndex === 2 ?
+		function (args, table, callback) {
+			var addedNodes = [];
+
+			var ret = oldDomManip.call(this, args, table, function(elem) {
+				addedNodes.push(elem);
+
+				return callback.apply(this, arguments);
+			});
+
+			$.each(addedNodes, function(i, element) {
+				$(element).trigger("canChildList", {
+					type: "childList",
+					addedNodes: addedNodes
+				});
+			});
+
+			return ret;
+		} :
+		function (args, callback) {
+			var addedNodes = [];
+
+			var ret = oldDomManip.call(this, args, function(elem) {
+				addedNodes.push(elem);
+
+				return callback.apply(this, arguments);
+			});
+
+			$.each(addedNodes, function(i, element) {
+				$(element).trigger("canChildList", {
+					type: "childList",
+					addedNodes: addedNodes
+				});
+			});
+
+			return ret;
+		});
 
 	// Handles removes like `remove` and `empty`
 	var oldClean = $.cleanData;
