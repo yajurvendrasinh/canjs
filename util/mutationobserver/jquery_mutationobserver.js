@@ -246,6 +246,20 @@ steal("jquery", "can/util/setimmediate", function($, setImmediate) {
 		},
 
 		/**
+		 * @method takeRecords
+		 * @hide
+		 *
+		 * Takes the current mutations that have not been fired and empties the queue
+		 *
+		 * @return {Array} An array of mutationts
+		 */
+		takeRecords: function() {
+			var mutations = this._mutations;
+			this._mutations = [];
+			return mutations;
+		},
+
+		/**
 		 * @method _observing
 		 * @hide
 		 *
@@ -288,7 +302,9 @@ steal("jquery", "can/util/setimmediate", function($, setImmediate) {
 					var mutations = self._mutations;
 					self._mutations = [];
 
-					self._callback(mutations);
+					if(mutations.length) {
+						self._callback(mutations);
+					}
 				});
 			}
 		}

@@ -393,8 +393,28 @@ steal("can/util/mutationobserver/jquery_mutationobserver.js", function(Observer)
 		setAttr(element, "foo", "bar");
 
 		stop();
+	});
 
+	test("takeRecords should return the event that has yet to be called.", function() {
+		var element = document.createElement("div");
 
+		var observer = new Observer(function(){});
+
+		observer.observe(element, {
+			attributes: true
+		});
+
+		can.append(can.$("#qunit-test-area"), element);
+
+		setAttr(element, "foo", "bar");
+
+		var mutations = observer.takeRecords();
+		var mutation = mutations[0];
+
+		equal(mutations.length, 1);
+		equal(mutation.type, "attributes");
+		equal(mutation.target, element);
+		equal(mutation.attributeName, "foo");
 	});
 
 });
