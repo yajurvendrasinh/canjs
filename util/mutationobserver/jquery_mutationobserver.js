@@ -204,17 +204,21 @@ steal("jquery", "can/util/setimmediate", function($, setImmediate) {
 		observe: function(element, options) {
 			var $element = $(element);
 
-			// Make sure we are not already observing this element. If so, then ignore
-			// this function call so that we don't callback multiple times for the same element.
-			if(this._observing(element)) {
-				return;
-			}
-
 			// This is the jQuery data we will be attaching to the element
 			var data = {
 				observer: this,
 				options: options
 			};
+
+			// If we aren't already observing this, mark it as so. Otherwise remove
+			// the data we previously added to the element so that they will be replaced
+			// by the new options passed into `observe`.
+			if(this._observing(element)) {
+				$element.removeData("canAttribute");
+				$element.removeData("canChildList");
+			} else {
+				this._bound.push($element);
+			}
 
 			// For the `attributes` type of observation.
 			if(options.attributes) {
@@ -225,8 +229,6 @@ steal("jquery", "can/util/setimmediate", function($, setImmediate) {
 			if(options.childList) {
 				$element.data("canChildList", data);
 			}
-
-			this._bound.push($element);
 		},
 
 		/**

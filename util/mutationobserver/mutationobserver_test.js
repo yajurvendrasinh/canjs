@@ -94,7 +94,7 @@ steal("can/util/mutationobserver/jquery_mutationobserver.js", function(Observer)
 		stop();
 	});
 
-	test("Descendant attributes changing", function() {
+	test("Subtree attributes changing", function() {
 		var element = document.createElement("div");
 		var child = document.createElement("span");
 		can.attr.set(child, "foo", "bar");
@@ -393,6 +393,27 @@ steal("can/util/mutationobserver/jquery_mutationobserver.js", function(Observer)
 		setAttr(element, "foo", "bar");
 
 		stop();
+	});
+
+	test("Observing on the same node should update the options", function() {
+		var div = document.createElement('div');
+		var observer = new Observer(function() {});
+		observer.observe(div, {
+			attributes: true,
+			attributeFilter: ['a']
+		});
+		observer.observe(div, {
+			attributes: true,
+			attributeFilter: ['b']
+		});
+
+		setAttr(div, "a", "A");
+		setAttr(div, "b", "B");
+
+		var records = observer.takeRecords();
+
+		equal(records.length, 1);
+		equal(records[0].attributeName, "b");
 	});
 
 	test("takeRecords should return the event that has yet to be called.", function() {
