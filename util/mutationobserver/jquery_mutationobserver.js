@@ -3,13 +3,7 @@
 // This implements `can.MutationObserver` for older browers that do not support
 // native MutationObservers or Mutation Events.
 
-steal("jquery", "can/util/setimmediate", "can/control", function($, setImmediate) {
-
-	// We only want to run this code if the browser supports neither MutationObserver
-	// or Mutation Event.
-	/*if(window.MutationObserver || window.MutationEvent) {
-		return;
-	}*/
+steal("jquery", "can/util/setimmediate", function($, setImmediate) {
 
 	// Feature detect which domManip we are using.
 	// Handles insertions, like `append`, `insertBefore`, etc.
@@ -30,7 +24,7 @@ steal("jquery", "can/util/setimmediate", "can/control", function($, setImmediate
 		function (args, table, callback) {
 			var addedNodes = [];
 
-			var ret = oldDomManip.call(this, args, function(elem) {
+			var ret = oldDomManip.call(this, args, table, function(elem) {
 				addedNodes.push(elem);
 				return callback.apply(this, arguments);
 			});
