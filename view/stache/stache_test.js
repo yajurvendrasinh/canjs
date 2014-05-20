@@ -3426,4 +3426,31 @@ steal("can/view/stache", "can/view","can/test","can/view/mustache/spec/specs",fu
 		equal(frag.childNodes[1].innerHTML, '', 'Context is set correctly for falsy values');
 		equal(frag.childNodes[2].innerHTML, '', 'Context is set correctly for falsy values');
 	})
+
+	test("stache can-value contenteditable", function () {
+		var template = can.view.stache("<div id='cdiv' contenteditable can-value='age'></div>");
+		var map = new can.Map();
+
+		var frag = template(map);
+
+		var ta = document.getElementById("qunit-test-area");
+		ta.appendChild(frag);
+
+		var div = document.getElementById("cdiv");
+		equal(div.innerHTML, "", "contenteditable set correctly if key does not exist in map");
+
+		map.attr("age", "30");
+
+		equal(div.innerHTML, "30", "contenteditable set correctly");
+
+		map.attr("age", "31");
+
+		equal(div.innerHTML, "31", "contenteditable update correctly");
+
+		div.innerHTML = "32";
+
+		can.trigger(div, "blur");
+
+		equal(map.attr("age"), "32", "updated from contenteditable");
+	});
 });
