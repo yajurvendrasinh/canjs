@@ -637,7 +637,7 @@ steal('can/route/pushstate', "can/test", function () {
 						start();
 
 						done();
-					}, 100);
+					}, 30);
 				});
 			});
 
@@ -653,7 +653,7 @@ steal('can/route/pushstate', "can/test", function () {
 						start();
 
 						done();
-					});
+					}, 30);
 				});
 			});
 		
