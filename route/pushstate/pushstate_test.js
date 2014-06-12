@@ -625,13 +625,17 @@ steal('can/route/pushstate', "can/test", function () {
 				can.$("#qunit-test-area")[0].appendChild(iframe);
 			});
 
+		//here's the problem
 			test("root can include the domain", function () {
 				stop();
+
 				window.routeTestReady = function (iCanRoute, loc, hist, win) {
 					win.can.route.bindings.pushstate.root = steal.config('root')+'';
 					win.can.route(":module/:plugin/:page\\.html");
 					win.can.route.ready();
-					equal(win.can.route.attr('module'), 'route', 'works')
+					equal(win.can.route.attr('module'), 'route', 'works').then(function(){
+						can.remove(can.$(iframe));
+					});
 					start();
 				};
 	
@@ -646,7 +650,9 @@ steal('can/route/pushstate', "can/test", function () {
 					win.can.route.bindings.pushstate.root = steal.config('root')+'';
 					win.can.route(":module\\.html");
 					win.can.route.ready();
-					ok(!win.can.route.attr('module'), 'there is no route match')
+					ok(!win.can.route.attr('module'), 'there is no route match').then(function(){
+						can.remove(can.$(iframe));
+					});
 					start();
 				};
 	
