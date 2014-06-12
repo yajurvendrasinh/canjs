@@ -625,40 +625,36 @@ steal('can/route/pushstate', "can/test", function () {
 				can.$("#qunit-test-area")[0].appendChild(iframe);
 			});
 
-		//here's the problem
 			test("root can include the domain", function () {
 				stop();
+				makeTestingIframe(function(info, done){
+					info.route.bindings.pushstate.root = steal.config('root')+'';
+					info.route(":module/:plugin/:page\\.html");
+					info.route.ready();
 
-				window.routeTestReady = function (iCanRoute, loc, hist, win) {
-					win.can.route.bindings.pushstate.root = steal.config('root')+'';
-					win.can.route(":module/:plugin/:page\\.html");
-					win.can.route.ready();
-					equal(win.can.route.attr('module'), 'route', 'works').then(function(){
-						can.remove(can.$(iframe));
-					});
-					start();
-				};
-	
-				var iframe = document.createElement("iframe");
-				iframe.src = can.test.path("route/pushstate/testing.html");
-				can.$("#qunit-test-area")[0].appendChild(iframe);
+					setTimeout(function(){
+						equal(info.route.attr('module'), 'route', 'works');
+						start();
+
+						done();
+					}, 100);
+				});
 			});
 
 			test("URL's don't greedily match", function () {
 				stop();
-				window.routeTestReady = function (iCanRoute, loc, hist, win) {
-					win.can.route.bindings.pushstate.root = steal.config('root')+'';
-					win.can.route(":module\\.html");
-					win.can.route.ready();
-					ok(!win.can.route.attr('module'), 'there is no route match').then(function(){
-						can.remove(can.$(iframe));
+				makeTestingIframe(function(info, done){
+					info.route.bindings.pushstate.root = steal.config('root')+'';
+					info.route(":module\\.html");
+					info.route.ready();
+
+					setTimeout(function(){
+						ok(!info.route.attr('module'), 'there is no route match');
+						start();
+
+						done();
 					});
-					start();
-				};
-	
-				var iframe = document.createElement("iframe");
-				iframe.src = can.test.path("route/pushstate/testing.html");
-				can.$("#qunit-test-area")[0].appendChild(iframe);
+				});
 			});
 		
 		}
