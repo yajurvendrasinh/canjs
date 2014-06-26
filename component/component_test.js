@@ -1286,4 +1286,29 @@ steal("can/component", "can/view/stache", function () {
 		equal(frag.childNodes[0].innerHTML, '', 'child component is removed');
 	});
 
+	test('component with an inverse tag and nested if doesnt render correctly', function() {
+		var tmpl = "{{^onThankYouPage}}"+
+					"<div>{{#if foo}}My Meals{{else}}My Order{{/if}}</div>"+
+					"{{/onThankYouPage}}";
+
+		can.Component.extend({
+			tag: "weird-component",
+			scope: {
+				foo: undefined,
+				onThankYouPage: function(){
+					return false;
+				},
+			},
+			template: tmpl
+		});
+
+		var frag = can.mustache("<weird-component></weird-component>")({});
+
+		can.append(can.$('#qunit-test-area'), frag);
+		equal(can.$('weird-component div')[0].innerHTML, 'My Order', 'shows else case');
+		can.$('weird-component').scope().attr('foo', true)
+		equal(can.$('weird-component div')[0].innerHTML, 'My Meals', 'shows if case');
+
+	});
+
 });
