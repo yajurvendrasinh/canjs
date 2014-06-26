@@ -1286,18 +1286,16 @@ steal("can/component", "can/view/stache", function () {
 		equal(frag.childNodes[0].innerHTML, '', 'child component is removed');
 	});
 
-	test('component with an inverse tag and nested if doesnt render correctly', function() {
-		var tmpl = "{{^onThankYouPage}}"+
+	test('component with an block section and nested if doesnt render correctly', function() {
+		var tmpl = "{{#bar}}"+
 					"<div>{{#if foo}}My Meals{{else}}My Order{{/if}}</div>"+
-					"{{/onThankYouPage}}";
+					"{{/bar}}";
 
 		can.Component.extend({
 			tag: "weird-component",
 			scope: {
 				foo: undefined,
-				onThankYouPage: function(){
-					return false;
-				},
+				bar: true,
 			},
 			template: tmpl
 		});
