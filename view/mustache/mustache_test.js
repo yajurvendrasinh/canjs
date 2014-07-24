@@ -3836,4 +3836,20 @@ steal("can/model", "can/view/mustache", "can/test", "can/view/mustache/spec/spec
 		var frag = can.mustache(tmpl)({ noData: true });
 		equal(frag.childNodes[0].innerHTML, 'no data', 'else with unless worked');
 	});
+	
+	test("live value attribute in live section (#1142)",function(){
+		var tmpl = can.mustache("<input type'text' {{#obj.val}} value='{{obj.val}}' {{/obj.val}}/>");
+		var map = new can.Map({});
+		var frag = tmpl({
+			obj: map
+		});
+		
+		map.attr("val","foo");
+		
+		equal(frag.childNodes[0].value,"foo");
+		
+		map.attr("val","bar");
+		equal(frag.childNodes[0].value,"bar");
+	});
+	
 });
