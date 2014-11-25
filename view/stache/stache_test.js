@@ -3656,7 +3656,7 @@ steal("can/view/stache", "can/view","can/test","can/view/mustache/spec/specs",fu
 
 		var frag = can.stache('<div>{{#cleanmeup}}<div>hi there</div>{{/cleanmeup}}</div>')({});
 		
-		// element must be inserted, otherwise attributes event will not be fired
+		// element is inserted and then removed, so helpers should also be unbound
 		can.append(can.$("#qunit-test-area"), frag);
 		$("#qunit-test-area").html()
 		data.attr('foo', false);
