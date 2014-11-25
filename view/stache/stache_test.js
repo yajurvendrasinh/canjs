@@ -3649,16 +3649,20 @@ steal("can/view/stache", "can/view","can/test","can/view/mustache/spec/specs",fu
 
 		can.stache.registerHelper("cleanmeup", function(options){
 			runCount++;
+			// console.log('run cleanmeup')
 			if(data.attr('foo')){
 				return options.fn(this);
 			}
 		});
 
-		var frag = can.stache('<div>{{#cleanmeup}}<div>hi there</div>{{/cleanmeup}}</div>')({});
+		var frag = can.stache('{{#cleanmeup}}<div>hi there</div>{{/cleanmeup}}')({});
 		
 		// element is inserted and then removed, so helpers should also be unbound
+		// console.log('add template')
 		can.append(can.$("#qunit-test-area"), frag);
-		$("#qunit-test-area").html()
+		// console.log('remove template')
+		$("#qunit-test-area").html("")
+		// console.log('change data')
 		data.attr('foo', false);
 		
 		stop();
