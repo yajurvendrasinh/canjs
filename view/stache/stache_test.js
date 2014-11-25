@@ -3642,4 +3642,31 @@ steal("can/view/stache", "can/view","can/test","can/view/mustache/spec/specs",fu
 		list.splice(-1);
 		equal(frag.childNodes.length, children - 1, 'Child node removed');
 	});
+
+	test('removing template html causes its helper to be cleaned up', function(){
+		var runCount = 0;
+		var data = new can.Map({ foo: true })
+
+		can.stache.registerHelper("cleanmeup", function(options){
+			runCount++;
+			if(data.attr('foo')){
+				return options.fn(this);
+			}
+		});
+
+		var frag = can.stache('{{#cleanmeup}}<div>hi there</div>{{/cleanmeup}}')({});
+		var frag2 = can.stache('{{#cleanmeup}}<div>hi there</div>{{/cleanmeup}}')({});
+		
+		// element must be inserted, otherwise attributes event will not be fired
+		can.append(can.$("#qunit-test-area"), frag2);
+		$("#qunit-test-area").html()
+		data.attr('foo', false);
+		
+		stop();
+		setTimeout(function(){
+			equal(runCount, 3, "helpers are cleaned up");
+			start();
+		},20);
+		
+	});
 });
