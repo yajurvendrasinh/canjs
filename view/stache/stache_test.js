@@ -3654,17 +3654,16 @@ steal("can/view/stache", "can/view","can/test","can/view/mustache/spec/specs",fu
 			}
 		});
 
-		var frag = can.stache('{{#cleanmeup}}<div>hi there</div>{{/cleanmeup}}')({});
-		var frag2 = can.stache('{{#cleanmeup}}<div>hi there</div>{{/cleanmeup}}')({});
+		var frag = can.stache('<div>{{#cleanmeup}}<div>hi there</div>{{/cleanmeup}}</div>')({});
 		
 		// element must be inserted, otherwise attributes event will not be fired
-		can.append(can.$("#qunit-test-area"), frag2);
+		can.append(can.$("#qunit-test-area"), frag);
 		$("#qunit-test-area").html()
 		data.attr('foo', false);
 		
 		stop();
 		setTimeout(function(){
-			equal(runCount, 3, "helpers are cleaned up");
+			equal(runCount, 1, "helpers are cleaned up");
 			start();
 		},20);
 		
