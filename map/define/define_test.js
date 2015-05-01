@@ -908,4 +908,28 @@ steal("can/map/define", "can/route", "can/test", "steal-qunit", function () {
 			
 		equal(personEvents,2);
 	});
+
+	test('Getter called different number of times if can.map.attributes is included or not (#1665)', function () {
+		var getterAccessCount = 0;
+
+		var Map = can.Map.extend({
+			define: {
+				foo: {
+					value: '',
+					get: function (lastSetVal) {
+						getterAccessCount++;
+						return lastSetVal;
+					}
+				}
+			}
+		});
+
+		var map = new Map();
+
+		map.attr('foo');
+		map.attr('foo', 'baz');
+		map.attr('foo');
+
+		equal(4, getterAccessCount, 'Getter accessed four times');
+	});
 });
