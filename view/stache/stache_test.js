@@ -3930,4 +3930,58 @@ steal("can/view/stache", "can/view", "can/test","can/view/mustache/spec/specs","
 
 		equal(frag.childNodes.length, 1, "only the placeholder textnode");
 	});
+
+
+
+	test("no memory leak with binding removal and wrapping element", function(){
+		expect(5);
+		var person = new can.Map({name: 'Bob'});
+
+		function renderTemplate() {
+		  equal(typeof person._bindings, "undefined", "no bindings initially");
+		  var dom = can.stache('<span>{{ name }}</span>')(person);
+		  equal(person._bindings, 2, "single binding");
+		  $('#qunit-fixture').html(dom);
+		  equal(person._bindings, 2, "bindings added");
+		}
+
+		function emptyTemplate() {
+		  equal(person._bindings, 2, "bindings added");
+		  $('#qunit-fixture').empty();
+		  stop();
+		  setTimeout(function(){
+		  	equal(person._bindings, 0, "bindings removed");
+		  	start();
+		  }, 50);
+		}
+
+		renderTemplate();
+		emptyTemplate();
+	});
+
+	test("memory leak with binding removal and no wrapping element", function(){
+		expect(5);
+		var person = new can.Map({name: 'Bob'});
+
+		function renderTemplate() {
+		  equal(typeof person._bindings, "undefined", "no bindings initially");
+		  var dom = can.stache('{{ name }}')(person);
+		  equal(person._bindings, 2, "single binding");
+		  $('#qunit-fixture').html(dom);
+		  equal(person._bindings, 2, "bindings added");
+		}
+
+		function emptyTemplate() {
+		  equal(person._bindings, 2, "bindings added");
+		  $('#qunit-fixture').empty();
+		  stop();
+		  setTimeout(function(){
+		  	equal(person._bindings, 0, "bindings removed");
+		  	start();
+		  }, 50);
+		}
+
+		renderTemplate();
+		emptyTemplate();
+	});
 });
