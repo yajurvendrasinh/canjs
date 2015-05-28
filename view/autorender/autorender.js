@@ -1,9 +1,9 @@
 "format steal";
 steal("can/util", "can/map/app", function(can, AppState){
-	
+
 	var deferred = new can.Deferred(),
 		ignoreAttributesRegExp = /^(dataViewId|class|id|type|src)$/i;
-	
+
 	var typeMatch = /\s*text\/(mustache|stache|ejs)\s*/;
 	function isIn(element, type) {
 		while(element.parentNode) {
@@ -26,7 +26,7 @@ steal("can/util", "can/map/app", function(can, AppState){
 			can.appendChild(ref.parentNode, element);
 		}
 	}
-	
+
 	function render(renderer, scope, el) {
 		var frag = renderer(scope);
 		if( isIn(el,"head") ) {
@@ -38,56 +38,63 @@ steal("can/util", "can/map/app", function(can, AppState){
 			el.parentNode.removeChild(el);
 		}
 	}
-	function setupScope(el) {
+	function setupScope(el, ViewModel) {
 		el = can.$(el);
 
 		var scope = (can.data(el, "scope") || can.data(el, "viewModel")) ?
-			can.viewModel(el) : new AppState();
+			can.viewModel(el) : new ViewModel();
 
 		can.each(el.attributes||[], function(attr) {
 			setAttr(el, attr.name, scope);
 		});
-		
+
 		can.bind.call(el, "attributes", function (ev) {
 			setAttr(el, ev.attributeName, scope);
 		});
-		
+
 		return scope;
 	}
-	
+
 	function autoload(){
 		var promises = [];
-		
+
 		can.each(  can.$("[can-autorender]"), function( el, i){
 			el.style.display = "none";
 
-			
+
 			var text = el.innerHTML || el.text,
 				typeAttr = el.getAttribute("type"),
 				typeInfo = typeAttr.match( typeMatch ),
 				type = typeInfo && typeInfo[1],
-				typeModule = "can/view/" + type;
+				typeModule = "can/view/" + type,
+				viewModelName = el.getAttribute("view-model") || "can/map";
 
 			if(window.System || !(window.define && window.define.amd)) {
 				typeModule += "/" + type;
+
+				if(viewModelName === "can/map") viewModelName = "can/map/map";
 			}
-			
+
 			promises.push( can["import"](typeModule).then(function(engine){
-				
-				engine = can[type] || engine;
-				if(engine.async) {
-					return engine.async(text).then(function(renderer){
-						render(renderer, setupScope(el), el);
-					});
-				} else {
-					var renderer = engine(text);
-					render(renderer, setupScope(el), el);
-				}
-				
+
+				return can["import"](viewModelName).then(function(ViewModel){
+
+					engine = can[type] || engine;
+					if(engine.async) {
+						return engine.async(text).then(function(renderer){
+							render(renderer, setupScope(el, ViewModel), el);
+						});
+					} else {
+						var renderer = engine(text);
+						render(renderer, setupScope(el, ViewModel), el);
+					}
+
+				});
+
 			}) );
-			
+
 		});
-		
+
 		can.when.apply(can, promises).then(
 			can.proxy(deferred.resolve, deferred),
 			can.proxy(deferred.reject, deferred)
