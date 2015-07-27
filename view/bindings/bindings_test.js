@@ -1227,5 +1227,19 @@ steal("can/view/bindings", "can/map", "can/test", "can/component", "can/view/mus
 		
 	});*/
 	
+	test("conditionals within custom can-value (#1770)", function(){
+		
+		var template = can.stache('<input can-value="{{#contact}}contact.{{/contact}}name">');
+		var map = new can.Map({contact: {name: "foo"}});
+		
+		var frag = template(map);
+
+		var ta = document.getElementById("qunit-fixture");
+		ta.appendChild(frag);
+
+		var input = ta.getElementsByTagName("input")[0];
+		equal(input.value, "foo", "input value set correctly if key does not exist in map");
+
+	});
 
 });
