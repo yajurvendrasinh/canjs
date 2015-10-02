@@ -249,7 +249,7 @@ steal("can-simple-dom", "can/util/vdom/build_fragment","can", "can/map/define", 
 			var hello = frag.firstChild;
 
 			equal(can.trim( innerHTML(hello) ), "Hello World");
-			
+
 			can.Component.extend({
 				tag: "hello-world-no-template",
 				leakScope: false,
@@ -1791,5 +1791,20 @@ steal("can-simple-dom", "can/util/vdom/build_fragment","can", "can/map/define", 
 		equal(count, 0, "Event handler should NOT be called since the element was removed.");
 
 		can.remove(can.$("#qunit-fixture>*"));
+	});
+
+	test("compute on the Component scope", function() {
+		can.Component.extend({
+			tag: 'fancy-div',
+			template: '<div>{{thing}}</div>',
+			scope: {
+				thing: can.compute(false)
+			}
+		});
+
+		var template = can.stache('<fancy-div></fancy-div>');
+		var frag = template({});
+
+		equal(frag.childNodes[0].innerHTML, '<div>false</div>', 'element contains the compute value');
 	});
 });
