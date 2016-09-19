@@ -3,7 +3,7 @@
 
 
 This guide walks through building a slightly modified version of [TodoMVC](http://todomvc.com/) with CanJS's [can-core Core libraries]
-and [can-fixture].
+and [can-fixture]. It takes about 1.5 hours.
 
 
 ## Setup

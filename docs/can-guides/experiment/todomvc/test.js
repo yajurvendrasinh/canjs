@@ -14,4 +14,9 @@ QUnit.test("basics work", function(){
 	F('#new-todo', 0).type("new thing\r");
 
 	F('li.todo', 0).size(4, "new todo added");
+
+
+	F('label:contains(mow lawn)',0).dblclick(function(){
+		QUnit.equal( window.frames[0].document.activeElement.value === "mow lawn", "mow lawn is focused");
+	});
 });
