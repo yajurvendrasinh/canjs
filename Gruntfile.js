@@ -52,7 +52,8 @@ module.exports = function (grunt) {
           testname: 'qunit tests',
           throttled: 2,
           sauceConfig: {
-            'video-upload-on-pass': false
+						'video-upload-on-pass': false,
+						'idle-timeout': 600
           }
         }
       }
